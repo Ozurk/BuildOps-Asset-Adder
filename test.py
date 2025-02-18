@@ -11,6 +11,9 @@ class Window(tk.Tk):
         tk.Tk.__init__(self)
         self.title("Taskify")
         self.geometry("800x800")
+        self.image_thumbnails = {}  # Stores PhotoImage references
+        self.image_labels = {}      # Stores Label widgets
+
 
         # Configure grid layout
         self.columnconfigure(0, weight=3)  # Main area
@@ -52,17 +55,18 @@ class Window(tk.Tk):
             btn = tk.Button(self.button_frame, text=text, command=lambda img=img: self.save_image(img))
             btn.grid(row=i, column=0, padx=10, pady=5, sticky="ew")
 
-            # Checkbox for enabling/disabling processing of this image
+            # Checkbox
             var = tk.BooleanVar(value=True)  # Default: checked (included)
             chk = tk.Checkbutton(self.button_frame, variable=var)
             chk.grid(row=i, column=1, padx=5, pady=5)
 
-            # Store the checkbox state with the image path
+            # Store checkbox state
             self.image_options[img] = var
 
             # Load and display the thumbnail
-            self.image_thumbnails[img] = self.load_thumbnail(img)
-            self.image_thumbnails[img].grid(row=i, column=2, padx=5, pady=5, sticky="w")
+            thumbnail_label = self.load_thumbnail(img)
+            if thumbnail_label:
+                thumbnail_label.grid(row=i, column=2, padx=5, pady=5, sticky="w")  # Position to the right
 
     def load_thumbnail(self, img_path):
         """Loads and resizes an image to create a thumbnail."""
@@ -89,19 +93,23 @@ class Window(tk.Tk):
 
     def update_thumbnail(self, img_path):
         """Updates the thumbnail in the UI after saving an image."""
-        if img_path in self.image_thumbnails:
-            self.image_thumbnails[img_path].destroy()  # Remove old label
+        # Remove the old label if it exists
+        if img_path in self.image_labels:
+            self.image_labels[img_path].destroy()  # Destroy old label
+        
+        # Create and store the new thumbnail
+        new_label = self.load_thumbnail(img_path)
+        new_label.grid(row=self.get_image_row(img_path), column=2, padx=5, pady=5, sticky="w")
+        
+        # Store the new label reference
+        self.image_labels[img_path] = new_label
 
-        # Create and store new thumbnail
-        self.image_thumbnails[img_path] = self.load_thumbnail(img_path)
-        self.image_thumbnails[img_path].grid(row=self.get_image_row(img_path), column=2, padx=5, pady=5, sticky="w")
 
     def get_image_row(self, img_path):
         """Returns the row number for an image in the UI."""
         img_list = ["pics/img1.png", "pics/img2.png", "pics/img3.png", "pics/img4.png", 
                     "pics/img5.png", "pics/img6.png", "pics/img7.png", "pics/img8.png"]
         return img_list.index(img_path) if img_path in img_list else 0  # Default to row 0 if not found
-
         
     def add_parameters(self):
         """Creates and places parameter inputs inside the parameter frame."""
@@ -136,16 +144,16 @@ class Window(tk.Tk):
                 
                 # Save image
                 image.save(img_path, "PNG")
-                print(f"✅ Image saved: {img_path}")
+                print(f" Image saved: {img_path}")
 
                 # Immediately refresh the UI to show the new thumbnail
                 self.update_thumbnail(img_path)
 
             else:
-                print("❌ No image found in clipboard.")
+                print(" No image found in clipboard.")
 
         except Exception as e:
-            print(f"⚠️ Error saving image: {e}")
+            print(f"Error saving image: {e}")
 
 
     def run_program(self):
